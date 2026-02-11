@@ -1,6 +1,6 @@
 comfyui:
-    base_path: /workspace/models
+    base_path: /runpod-volume
     checkpoints: checkpoints/
     loras: loras/
     vae: vae/
-    workflows: /workspace/workflows/
+    workflows: workflows/

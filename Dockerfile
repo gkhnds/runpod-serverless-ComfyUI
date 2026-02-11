@@ -20,6 +20,7 @@ RUN pip install --no-cache-dir runpod boto3 requests
 
 # 7. Kendi dosyalarımızı kopyala
 COPY handler.py /ComfyUI/handler.py
+COPY workflow.json /ComfyUI/workflow.json
 COPY extra_model_paths.yaml /ComfyUI/extra_model_paths.yaml
 
 # 8. Modelleri volume'dan okuması için yol ayarı

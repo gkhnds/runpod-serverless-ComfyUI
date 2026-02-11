@@ -1,126 +1,84 @@
 {
   "3": {
     "inputs": {
-      "seed": 156680208700286,
+      "seed": 123456789,
       "steps": 20,
       "cfg": 1.0,
       "sampler_name": "euler",
       "scheduler": "simple",
-      "denoise": 1.0,
-      "model": [
-        "12",
-        0
-      ],
-      "positive": [
-        "6",
-        0
-      ],
-      "negative": [
-        "7",
-        0
-      ],
-      "latent_image": [
-        "5",
-        0
-      ]
+      "denoise": 0.65,
+      "model": ["12", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["10", 0]
     },
     "class_type": "KSampler",
-    "_meta": {
-      "title": "KSampler"
-    }
+    "_meta": { "title": "KSampler (Flux)" }
   },
   "4": {
     "inputs": {
       "ckpt_name": "flux1-dev-fp8.safetensors"
     },
     "class_type": "CheckpointLoaderSimple",
-    "_meta": {
-      "title": "Load Checkpoint"
-    }
-  },
-  "5": {
-    "inputs": {
-      "width": 1024,
-      "height": 1024,
-      "batch_size": 1
-    },
-    "class_type": "EmptyLatentImage",
-    "_meta": {
-      "title": "Empty Latent Image"
-    }
+    "_meta": { "title": "Load Checkpoint" }
   },
   "6": {
     "inputs": {
-      "text": "photo of a woman, realistic, 8k, high quality",
-      "clip": [
-        "12",
-        1
-      ]
+      "text": "photo of a woman, realistic, 8k",
+      "clip": ["12", 1]
     },
     "class_type": "CLIPTextEncode",
-    "_meta": {
-      "title": "CLIP Text Encode (Positive)"
-    }
+    "_meta": { "title": "Positive Prompt" }
   },
   "7": {
     "inputs": {
-      "text": "text, watermark, blur, low quality",
-      "clip": [
-        "12",
-        1
-      ]
+      "text": "bad quality, blurry, plastic, painting",
+      "clip": ["12", 1]
     },
     "class_type": "CLIPTextEncode",
-    "_meta": {
-      "title": "CLIP Text Encode (Negative)"
-    }
+    "_meta": { "title": "Negative Prompt" }
   },
   "8": {
     "inputs": {
-      "samples": [
-        "3",
-        0
-      ],
-      "vae": [
-        "12",
-        2
-      ]
+      "samples": ["3", 0],
+      "vae": ["4", 2]
     },
     "class_type": "VAEDecode",
-    "_meta": {
-      "title": "VAE Decode"
-    }
+    "_meta": { "title": "VAE Decode" }
   },
   "9": {
     "inputs": {
-      "filename_prefix": "RunPod_Flux_Test",
-      "images": [
-        "8",
-        0
-      ]
+      "filename_prefix": "RunPod_Output",
+      "images": ["8", 0]
     },
     "class_type": "SaveImage",
-    "_meta": {
-      "title": "Save Image"
-    }
+    "_meta": { "title": "Save Image" }
+  },
+  "10": {
+    "inputs": {
+      "pixels": ["11", 0],
+      "vae": ["4", 2]
+    },
+    "class_type": "VAEEncode",
+    "_meta": { "title": "VAE Encode (for img2img)" }
+  },
+  "11": {
+    "inputs": {
+      "image": "input_image.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "_meta": { "title": "Load Image" }
   },
   "12": {
     "inputs": {
-      "lora_name": "flux_realism_lora.safetensors",
-      "strength_model": 1.0,
+      "lora_name": "nsfw_lora_placeholder.safetensors",
+      "strength_model": 0.8,
       "strength_clip": 1.0,
-      "model": [
-        "4",
-        0
-      ],
-      "clip": [
-        "4",
-        1
-      ]
+      "model": ["4", 0],
+      "clip": ["4", 1]
     },
     "class_type": "LoraLoader",
-    "_meta": {
-      "title": "Load LoRA"
-    }
+    "_meta": { "title": "LoRA Loader" }
   }
 }

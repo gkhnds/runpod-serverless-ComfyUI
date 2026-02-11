@@ -1,0 +1,6 @@
+comfyui:
+    base_path: /workspace/models
+    checkpoints: checkpoints/
+    loras: loras/
+    vae: vae/
+    workflows: /workspace/workflows/

@@ -1,5 +1,5 @@
 comfyui:
-    base_path: /runpod-volume
+    base_path: /workspace
     checkpoints: checkpoints/
     loras: loras/
     vae: vae/

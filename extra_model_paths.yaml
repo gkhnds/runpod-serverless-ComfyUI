@@ -3,4 +3,4 @@ comfyui:
     checkpoints: checkpoints/
     loras: loras/
     vae: vae/
-    workflows: workflows/
+    controlnet: controlnet/

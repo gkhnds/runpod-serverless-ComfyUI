@@ -25,6 +25,7 @@ def upload_to_r2(file_path, file_name):
     try:
         unique_name = f"{int(time.time())}_{file_name}"
         s3.upload_file(file_path, BUCKET_NAME, unique_name)
+        # Public URL yapısı (Eğer farklıysa burayı düzenle)
         return f"{R2_ENDPOINT_URL}/{BUCKET_NAME}/{unique_name}"
     except Exception as e:
         return f"Upload Failed: {str(e)}"
@@ -41,28 +42,31 @@ def handler(job):
     job_input = job['input']
     SERVER_URL = "http://127.0.0.1:8188"
     
-    # 1. COMFYUI BAŞLATMA VE BEKLEME (GÜÇLENDİRİLMİŞ)
+    # 1. COMFYUI BAŞLATMA (GÜÇLENDİRİLMİŞ BEKLEME)
     if not check_server(SERVER_URL):
-        print("--- ComfyUI Başlatılıyor... ---")
-        # Logları görmek için stdout/stderr yönlendirmesi yapılabilir
-        subprocess.Popen(["python", "main.py", "--listen", "127.0.0.1", "--port", "8188"], cwd="/ComfyUI")
+        print("--- ComfyUI Başlatılıyor (Flux Modu) ---")
+        # --preview-method auto parametresi hızı artırır
+        subprocess.Popen(["python", "main.py", "--listen", "127.0.0.1", "--port", "8188", "--preview-method", "auto"], cwd="/ComfyUI")
         
-        # Bekleme Döngüsü (Maksimum 60 Saniye)
+        # Bekleme Döngüsü (Maksimum 180 Saniye - 3 Dakika)
         server_ready = False
-        for i in range(60):
+        print("Sunucunun açılması bekleniyor (Bu işlem 1-2 dakika sürebilir)...")
+        
+        for i in range(180):
             if check_server(SERVER_URL):
-                print(f"ComfyUI {i}. saniyede hazır oldu!")
+                print(f"✅ ComfyUI {i}. saniyede hazır oldu!")
                 server_ready = True
                 break
+            
+            # Her 5 saniyede bir log at ki yaşadığını bilelim
+            if i % 5 == 0:
+                print(f"Bekleniyor... {i}/180sn")
             time.sleep(1)
-            print(f"Server bekleniyor... {i}/60")
         
         if not server_ready:
-            print("HATA: ComfyUI 60 saniye içinde açılamadı.")
-            # Log dosyası varsa içeriğini okumak burada iyi olurdu
-            return {"status": "failed", "error": "Server Timeout: ComfyUI başlatılamadı."}
+            return {"status": "failed", "error": "TIMEOUT: ComfyUI 180 saniyede açılamadı. Logları kontrol edin."}
     
-    # 2. WORKFLOW HAZIRLIĞI
+    # 2. WORKFLOW YÜKLEME
     workflow_path = "/ComfyUI/workflow.json"
     if not os.path.exists(workflow_path):
         return {"error": "workflow.json bulunamadı!"}
@@ -70,47 +74,67 @@ def handler(job):
     with open(workflow_path, 'r') as f:
         workflow = json.load(f)
 
-    # Parametreleri Güncelle
+    # 3. PARAMETRELERİ GÜNCELLE
+    # Prompt
     if "prompt" in job_input:
         workflow["6"]["inputs"]["text"] = job_input["prompt"]
     
-    workflow["3"]["inputs"]["seed"] = job_input.get("seed", int(time.time() * 1000))
+    # Seed
+    seed = job_input.get("seed", int(time.time() * 1000))
+    workflow["3"]["inputs"]["seed"] = seed
 
-    # LoRA Bypass (Eğer 'use_lora': false ise)
+    # LoRA Devre Dışı Bırakma (Testler için)
     if job_input.get("use_lora", False) == False:
+        # KSampler -> Checkpoint
         workflow["3"]["inputs"]["model"] = ["4", 0]
+        # Text Encoders -> Checkpoint
         workflow["6"]["inputs"]["clip"] = ["4", 1]
         workflow["7"]["inputs"]["clip"] = ["4", 1]
 
-    # 3. İSTEĞİ GÖNDER
+    # 4. İSTEĞİ GÖNDER
     p = {"prompt": workflow}
     data = json.dumps(p).encode('utf-8')
     
     try:
         req = urllib.request.Request(f"{SERVER_URL}/prompt", data=data)
         response = urllib.request.urlopen(req)
-        print("Prompt ComfyUI'ye iletildi.")
+        # Cevabı oku ama işlem asenkron devam edecek
+        resp_data = json.loads(response.read())
+        print(f"İşlem ComfyUI kuyruğuna alındı: {resp_data}")
     except urllib.error.URLError as e:
-        return {"status": "failed", "error": f"Bağlantı Hatası: {str(e)}"}
+        return {"status": "failed", "error": f"ComfyUI Bağlantı Hatası: {str(e)}"}
 
-    # 4. SONUCU BEKLE (POLLING)
+    # 5. SONUCU BEKLE (POLLING)
+    # Çıktı klasörünü izle
     output_dir = "/ComfyUI/output"
     start_time = time.time()
-    timeout = 120 # 2 dakika render süresi tanı
+    render_timeout = 300 # Render için 5 dakika tanı (Flux ağır olabilir)
     
-    while time.time() - start_time < timeout:
+    print("Resim üretimi bekleniyor...")
+    while time.time() - start_time < render_timeout:
+        # Klasördeki dosyaları kontrol et
         files = [os.path.join(output_dir, f) for f in os.listdir(output_dir) if os.path.isfile(os.path.join(output_dir, f))]
         
         if files:
+            # En son değiştirilen dosyayı bul
             latest_file = max(files, key=os.path.getmtime)
-            # Dosya script başladıktan sonra mı oluştu?
+            
+            # Dosya script başladıktan sonra mı oluştu? (Eski dosyaları yollamayalım)
             if os.path.getmtime(latest_file) > start_time:
-                print(f"Resim üretildi: {latest_file}")
+                print(f"🎉 Resim bulundu: {latest_file}")
+                
+                # Biraz bekle ki dosya yazımı tamamen bitsin
+                time.sleep(1)
+                
                 r2_url = upload_to_r2(latest_file, os.path.basename(latest_file))
-                return {"status": "success", "image_url": r2_url}
+                return {
+                    "status": "success", 
+                    "image_url": r2_url,
+                    "seed": seed
+                }
         
         time.sleep(1)
 
-    return {"status": "timeout", "error": "Resim üretimi zaman aşımına uğradı."}
+    return {"status": "timeout", "error": "Resim üretimi zaman aşımına uğradı (Render)."}
 
 runpod.serverless.start({"handler": handler})

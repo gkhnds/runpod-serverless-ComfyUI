@@ -27,4 +27,5 @@ COPY extra_model_paths.yaml .
 ENV COMFYUI_PATH_CONFIG=/ComfyUI/extra_model_paths.yaml
 
 # Başla
-CMD ["python", "-u", "handler.py"]
+# CMD ["python", "-u", "handler.py"]  <-- ESKİSİNİ SİL VEYA YORUMA AL
+CMD ["sleep", "infinity"]

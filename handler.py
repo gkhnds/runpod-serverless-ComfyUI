@@ -7,7 +7,7 @@ import requests
 import boto3
 import sys
 
-# --- R2 AYARLARI ---
+# --- R2 AYARLARI --
 R2_ACCESS_KEY = os.environ.get("R2_ACCESS_KEY")
 R2_SECRET_KEY = os.environ.get("R2_SECRET_KEY")
 BUCKET_NAME = os.environ.get("BUCKET_NAME")

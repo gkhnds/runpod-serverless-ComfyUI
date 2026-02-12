@@ -26,5 +26,5 @@ COPY extra_model_paths.yaml .
 # Modellerin nerede olduğunu sisteme bildir
 ENV COMFYUI_PATH_CONFIG=/ComfyUI/extra_model_paths.yaml
 
-# Başlat
+# Başla
 CMD ["python", "-u", "handler.py"]

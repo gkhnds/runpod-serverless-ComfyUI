@@ -79,7 +79,7 @@ def handler(job):
     
     workflow["3"]["inputs"]["seed"] = job_input.get("seed", int(time.time()*1000))
 
-    # LoRA Bypass (Hata almamak için şimdilik kapalı başlatılabilir)
+    # LoRA Bypass (Hata almamak için şimdilik kapalı başlatılabilir
     if job_input.get("use_lora", False) == False:
         workflow["3"]["inputs"]["model"] = ["4", 0]
         workflow["6"]["inputs"]["clip"] = ["4", 1]

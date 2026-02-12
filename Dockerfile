@@ -1,4 +1,4 @@
-# 1. Base Image (Zaten içinde PyTorch ve CUDA var)
+
 FROM runpod/pytorch:2.2.1-py3.10-cuda12.1.1-devel-ubuntu22.04
 
 # 2. Sistem güncellemeleri
